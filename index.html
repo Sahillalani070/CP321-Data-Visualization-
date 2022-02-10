@@ -1,0 +1,102 @@
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v7.min.js" type="text/JavaScript"></script>
+    </head>
+    <body>
+        <svg  id="task1" style="width:500px;height:500px;">
+        </svg>
+        <button onclick="buttons()" style="background-color: #74c974; font-size: medium; display: flex; border-radius: 13px;">Remove three bars (students with least marks)</button> 
+        <button onclick="reset()" style="background-color: #74c974; font-size: medium; display: flex; border-radius: 13px;">RESET</button>
+        <script>
+            var stud =  [{Student: 1, marks: 6}, { Student: 2, marks: 100}, { Student: 3, marks: 90}, { Student: 4, marks: 55},
+            { Student: 5, marks: 83}, { Student: 6, marks: 88}, { Student: 7, marks: 91}, { Student: 8, marks: 92}, 
+            { Student: 9, marks: 67}, { Student: 10, marks: 73}];
+            var margin = { top: 60, right: 60, bottom: 60, left: 60 }, width = 500-margin.left-margin.right, height = 500-margin.top-margin.bottom;
+            
+            stud.sort(function(a,b) {
+                return b.marks- a.marks});
+            console.log(stud);
+            function studData(){
+            var xExtent = d3.extent(stud, d => d.marks);
+            var yExtent = d3.extent(stud, d => d.Student);
+            var xScale = d3.scaleLinear().domain([0,100]).range([0,width]);
+            var yScale = d3.scaleBand().range([height, 0]).domain(stud.map(function(d){return d.Student;})).padding(0.1);
+            var xAxis = d3.axisBottom().scale(xScale).tickSize(-height);
+            var yAxis = d3.axisLeft().scale(yScale);
+            d3.select("#task1").append("g").attr("transform", "translate("+margin.left+","+margin.top+")");
+            d3.select("#task1")
+                .append("g")
+                .attr("transform", "translate("+margin.left+","+height+")")
+                .call(xAxis);
+            d3.select("#task1")
+                .append("g")
+                .attr("transform", "translate("+margin.left+",0)")
+                .call(yAxis);
+            d3.select("#task1")
+                .selectAll("rect")
+                .data(stud)
+                .enter()
+                .append("rect")
+                .attr("width", d=> xScale(d.marks))
+                .attr("height",30)
+                .attr("y", d=>yScale(d.Student))
+                .attr("transform", "translate("+margin.left+",0)")
+                .style("fill", "green")
+                .style("stroke", "#000000")
+                .style("stroke-width", "1 px")
+
+            }
+            studData(stud)
+            function buttons(){
+                d3.select("#task1").selectAll("rect").data(stud).remove();
+                d3.select("#task1").selectAll("g").remove();
+                var stud2 = stud
+                stud = stud.slice(0,7);
+                studData(stud);
+                stud = stud2
+            }
+            function reset(){
+                d3.select("#task1").selectAll("rect").data(stud).remove();
+                d3.select("#task1").selectAll("g").remove();
+                studData(stud);
+
+            }
+        </script>
+            
+            <div id="Scat"></div>
+
+            <script>
+                var Scatter = d3.select("#Scat").append("svg") // new svg 500*500
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom).append("g").attr("transform","translate(" + margin.left + "," + margin.top + ")");
+                
+                d3.csv("Kaggle-modified-Suddharshan.csv").then( function(data) {
+                    const x = d3.scaleLinear()
+                        .domain([0, 50])
+                        .range([0, width]);
+                    const y = d3.scaleLinear()
+                        .domain([4.5, 5.0])
+                        .range([height, 0]);
+                    Scatter.append("g")			
+                        .attr("class", "grid")
+                        .attr("transform", `translate(0, ${height})`)
+                        .call(d3.axisBottom(x).ticks(10).tickSize(-height));
+                    Scatter.append("g")
+                        .attr("class", "grid")
+                        .call(d3.axisLeft(y).ticks(10).tickSize(-width));
+                    Scatter.append("g").selectAll("text").data(data).join("text")
+                        .attr("dx", 5).attr("x", d => x(d['duration'])).attr("y", d => y(d['rating']))
+                        .text(d => d['creator'])
+                        .call(text => text.clone(true))
+                        .attr("stroke", "blue").attr("stroke-width", 2);
+                    Scatter.append('g')
+                        .selectAll("dot")
+                        .data(data)
+                        .join("circle")
+                        .attr("cx", function (d) { return x(d['duration']); }).attr("cy", function (d) { return y(d['rating']); }).attr("r", 6)
+                        .style("fill", "#74c974")
+
+                })
+            </script>
+        </body>
+    </html>
