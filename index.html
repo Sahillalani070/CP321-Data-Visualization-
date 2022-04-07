@@ -1,102 +1,556 @@
 <html>
-    <head>
-        <script src="https://d3js.org/d3.v7.min.js" type="text/JavaScript"></script>
-    </head>
-    <body>
-        <svg  id="task1" style="width:500px;height:500px;">
-        </svg>
-        <button onclick="buttons()" style="background-color: #74c974; font-size: medium; display: flex; border-radius: 13px;">Remove three bars (students with least marks)</button> 
-        <button onclick="reset()" style="background-color: #74c974; font-size: medium; display: flex; border-radius: 13px;">RESET</button>
-        <script>
-            var stud =  [{Student: 1, marks: 6}, { Student: 2, marks: 100}, { Student: 3, marks: 90}, { Student: 4, marks: 55},
-            { Student: 5, marks: 83}, { Student: 6, marks: 88}, { Student: 7, marks: 91}, { Student: 8, marks: 92}, 
-            { Student: 9, marks: 67}, { Student: 10, marks: 73}];
-            var margin = { top: 60, right: 60, bottom: 60, left: 60 }, width = 500-margin.left-margin.right, height = 500-margin.top-margin.bottom;
-            
-            stud.sort(function(a,b) {
-                return b.marks- a.marks});
-            console.log(stud);
-            function studData(){
-            var xExtent = d3.extent(stud, d => d.marks);
-            var yExtent = d3.extent(stud, d => d.Student);
-            var xScale = d3.scaleLinear().domain([0,100]).range([0,width]);
-            var yScale = d3.scaleBand().range([height, 0]).domain(stud.map(function(d){return d.Student;})).padding(0.1);
-            var xAxis = d3.axisBottom().scale(xScale).tickSize(-height);
-            var yAxis = d3.axisLeft().scale(yScale);
-            d3.select("#task1").append("g").attr("transform", "translate("+margin.left+","+margin.top+")");
-            d3.select("#task1")
-                .append("g")
-                .attr("transform", "translate("+margin.left+","+height+")")
-                .call(xAxis);
-            d3.select("#task1")
-                .append("g")
-                .attr("transform", "translate("+margin.left+",0)")
-                .call(yAxis);
-            d3.select("#task1")
-                .selectAll("rect")
-                .data(stud)
-                .enter()
-                .append("rect")
-                .attr("width", d=> xScale(d.marks))
-                .attr("height",30)
-                .attr("y", d=>yScale(d.Student))
-                .attr("transform", "translate("+margin.left+",0)")
-                .style("fill", "green")
-                .style("stroke", "#000000")
-                .style("stroke-width", "1 px")
 
-            }
-            studData(stud)
-            function buttons(){
-                d3.select("#task1").selectAll("rect").data(stud).remove();
-                d3.select("#task1").selectAll("g").remove();
-                var stud2 = stud
-                stud = stud.slice(0,7);
-                studData(stud);
-                stud = stud2
-            }
-            function reset(){
-                d3.select("#task1").selectAll("rect").data(stud).remove();
-                d3.select("#task1").selectAll("g").remove();
-                studData(stud);
+<head>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        path.topo {
+            stroke-width: .4;
+            stroke: black;
+        }
+    </style>
+</head>
 
-            }
-        </script>
-            
-            <div id="Scat"></div>
+<body onload="NA('Preceeding')">
+    <h2 style="text-align: center; padding-top: 2%;">COVID-19 Geo Map</h2>
+    <div id="chloro" style="display: flex;flex-direction: column; justify-content: center;align-items: center;">
+        <div style="padding-bottom: 1%;">
+            <button onclick="NA('Current')" style="border: none;
+            color: white;
+            background-color: #4169e1;
+            padding: 15px 32px;
+            font-size: 14px;
+            margin-right: 50px;
+            border-radius: 100px;"> Current Week Cases (NA) </button>
+            <button onclick="NA('Preceeding')" style="border: none;
+            color: white;
+            background-color: #4169e1;
+            padding: 15px 32px;
+            font-size: 14px;
+            margin-right: 50px;
+            border-radius: 100px;"> Previous Week Cases (NA) </button>
+            <button onclick="SA('Current')" style="border: none;
+            color: white;
+            background-color: #4169e1;
+            padding: 15px 32px;
+            font-size: 14px;
+            border-radius: 100px;"> Current Week Cases (SA) </button>
+        </div>
+        <div style="padding-bottom: 3%;">
+            <button onclick="SA('Preceeding')" style="border: none;
+            color: white;
+            background-color: #4169e1;
+            padding: 15px 32px;
+            font-size: 14px;
+            margin-right: 50px;
+            border-radius: 100px;"> Previous Week Cases (SA) </button>
+            <button onclick="both('Current')" style="border: none;
+            color: white;
+            background-color: #4169e1;
+            padding: 15px 32px;
+            font-size: 14px;
+            margin-right: 50px;
+            border-radius: 100px;"> Current Week Cases (Both) </button>
+            <button onclick="both('Preceeding')" style="border: none;
+            color: white;
+            background-color: #4169e1;
+            padding: 15px 32px;
+            font-size: 14px;
+            border-radius: 100px;"> Previous Week Cases (Both) </button>
+        </div>
+    </div>
+    <div>
+        <svg id="legend" height=100 width=400></svg>
+    </div>
 
-            <script>
-                var Scatter = d3.select("#Scat").append("svg") // new svg 500*500
+    <div id="id2"></div>
+
+    <script>
+        function SA(input) {
+            d3.select("svg").remove();
+
+            if (input == 'Current') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+
                 .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom).append("g").attr("transform","translate(" + margin.left + "," + margin.top + ")");
-                
-                d3.csv("Kaggle-modified-Suddharshan.csv").then( function(data) {
-                    const x = d3.scaleLinear()
-                        .domain([0, 50])
-                        .range([0, width]);
-                    const y = d3.scaleLinear()
-                        .domain([4.5, 5.0])
-                        .range([height, 0]);
-                    Scatter.append("g")			
-                        .attr("class", "grid")
-                        .attr("transform", `translate(0, ${height})`)
-                        .call(d3.axisBottom(x).ticks(10).tickSize(-height));
-                    Scatter.append("g")
-                        .attr("class", "grid")
-                        .call(d3.axisLeft(y).ticks(10).tickSize(-width));
-                    Scatter.append("g").selectAll("text").data(data).join("text")
-                        .attr("dx", 5).attr("x", d => x(d['duration'])).attr("y", d => y(d['rating']))
-                        .text(d => d['creator'])
-                        .call(text => text.clone(true))
-                        .attr("stroke", "blue").attr("stroke-width", 2);
-                    Scatter.append('g')
-                        .selectAll("dot")
-                        .data(data)
-                        .join("circle")
-                        .attr("cx", function (d) { return x(d['duration']); }).attr("cy", function (d) { return y(d['rating']); }).attr("r", 6)
-                        .style("fill", "#74c974")
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(500)
+                    .center([-50, -25])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 45, 150, 500, 2500, 8500, 100000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesInCurrentWeek);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
 
-                })
-            </script>
-        </body>
-    </html>
+                    var topo = my_data[0]
+                    svg.append("g")
+                        .selectAll("path")
+
+                    .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+
+                });
+            } else if (input == 'Preceeding') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+
+                .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(500)
+                    .center([-60, -25])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 150, 500, 2500, 8500, 100000, 150000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesPreceeding);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+                    var topo = my_data[0]
+                    svg.append("g")
+                        .selectAll("path")
+
+                    .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+
+                });
+            }
+
+        }
+
+
+        function both(input) {
+            d3.select("svg").remove();
+            if (input == 'Current') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(180)
+                    .center([-50, 50])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 45, 150, 500, 2500, 8500, 100000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesInCurrentWeek);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+                    var topo = my_data[0]
+                    svg.append("g")
+                        .selectAll("path")
+
+                    .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+                });
+            } else if (input == 'Preceeding') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(180)
+                    .center([-70, 50])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 150, 500, 2500, 8500, 100000, 150000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesPreceeding);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+
+                    var topo = my_data[0]
+                    svg.append("g")
+                        .selectAll("path")
+
+                    .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+
+                });
+            }
+
+        }
+        var data = [{
+            "color": "#9b0303",
+            "value": 0
+        }, {
+            "color": '#b30F0F',
+            "value": 30000
+        }, {
+            "color": '#DD3730',
+            "value": 60000
+        }, {
+            "color": '#E71313',
+            "value": 12000
+        }, {
+            "color": '#F14C4C',
+            "value": 180000
+        }, {
+            "color": '#FF9595',
+            "value": 21000
+        }, {
+            "color": '#FFD2D2',
+            "value": 23000
+        }, {
+            "color": 'FF0F0',
+            "value": 250000
+        }];
+
+        var extent = d3.extent(data, d => d.value);
+
+        var padding = 10;
+        var width = 620;
+        var innerWidth = width - (padding * 2);
+        var barHeight = 30;
+        var height = 98;
+
+        var xScale = d3.scaleLinear()
+            .range([0, innerWidth])
+            .domain(extent);
+
+
+        var svg = d3.select("body").append("svg").attr("width", width).attr("height", height).attr("transform", "translate(10,-15)");;
+        var g = svg.append("g").attr("transform", "translate(" + padding + ", 0)");
+
+        var defs = svg.append("defs");
+        var linearGradient = defs.append("linearGradient").attr("id", "myGradient");
+        linearGradient.selectAll("stop")
+            .data(data)
+            .enter().append("stop")
+            .attr("offset", d => ((d.value - extent[0]) / (extent[1] - extent[0]) * 100) + "%")
+            .attr("stop-color", d => d.color);
+
+        g.append("rect")
+            .attr("width", innerWidth)
+            .attr("height", barHeight)
+            .style("fill", "url(#myGradient)");
+
+        g.append("g")
+            .select(".domain").remove();
+
+        function NorthAmerica(input) {
+            d3.select("svg").remove();
+
+            if (input == 'Current') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+
+                .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(250)
+                    .center([-100, 69.5])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 45, 150, 500, 2500, 8500, 100000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesInCurrentWeek);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+
+                    var topo = my_data[0]
+
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+                });
+            } else if (input == 'Preceeding') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+
+                .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(250)
+                    .center([-95, 69.5])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 150, 500, 2500, 8500, 100000, 150000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesPreceeding);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+                    var topo = my_data[0]
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+
+                });
+            }
+
+
+        }
+
+        function NA(input) {
+            d3.select("svg").remove();
+
+            if (input == 'Current') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+
+                .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(250)
+                    .center([-100, 69.5])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 45, 150, 500, 2500, 8500, 100000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesInCurrentWeek);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+
+                    var topo = my_data[0]
+
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+                });
+            } else if (input == 'Preceeding') {
+                var margin = {
+                        top: 5,
+                        right: 5,
+                        bottom: 5,
+                        left: 5
+                    },
+                    width = 750 - margin.left - margin.right,
+                    height = 800 - margin.top - margin.bottom;
+                var svg = d3.select("#chloro").append("svg")
+
+                .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                var projection = d3.geoMercator()
+                    .scale(250)
+                    .center([-95, 69.5])
+                    .translate([width / 2 - margin.left, height / 2]);
+                var domain = [15, 150, 500, 2500, 8500, 100000, 150000, 250000]
+                var labels = ["<1000", "1000-10000", "10000>"]
+                var range = ['#9b0303', '#b30F0F', '#DD3730', '#E71313', '#F14C4C', '#FF9595', '#FFD2D2', 'FF0F0']
+                var colorScale = d3.scaleThreshold()
+                    .domain(domain)
+                    .range(range);
+                var promises = []
+                var data = d3.map();
+                promises.push(d3.json("../data/bothgeo.json"))
+                promises.push(d3.csv("../data/both.csv", function(d) {
+                    data.set(d.CountryName, +d.CasesPreceeding);
+                }))
+                myDataPromises = Promise.all(promises).then(function(my_data) {
+                    var topo = my_data[0]
+                    svg.append("g")
+                        .selectAll("path")
+                        .data(topo.features)
+                        .enter()
+                        .append("path")
+                        .attr("class", "topo")
+                        .attr("d", d3.geoPath()
+                            .projection(projection)
+                        )
+                        .attr("fill", function(d) {
+                            d.total = data.get(d.properties.name) || 0;
+                            return colorScale(d.total);
+                        })
+
+                });
+            }
+
+
+        }
+    </script>
+
+
+
+</body>
+
+</html>
